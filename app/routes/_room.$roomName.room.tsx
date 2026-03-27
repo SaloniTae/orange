@@ -166,7 +166,9 @@ function JoinedRoom({ bugReportsEnabled }: { bugReportsEnabled: boolean }) {
 
 	return (
 		<PullAudioTracks
-			audioTracks={otherUsers.map((u) => u.tracks.audio).filter(isNonNullable)}
+			audioTracks={otherUsers
+				.flatMap((u) => [u.tracks.audio, u.tracks.screenshareAudio])
+				.filter(isNonNullable)}
 		>
 			<div className="flex flex-col h-full bg-white dark:bg-zinc-800">
 				<div className="relative flex-grow bg-black isolate">

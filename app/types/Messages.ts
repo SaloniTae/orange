@@ -15,6 +15,7 @@ export type User = {
 		video?: string
 		videoEnabled?: boolean
 		screenshare?: string
+		screenshareAudio?: string
 		screenShareEnabled?: boolean
 	}
 }

@@ -81,7 +81,7 @@ export const Participant = forwardRef<
 	const isSpeaking =
 		useIsSpeaking(user.id === 'ai' ? aiAudioTrack : undefined) || user.speaking
 	const pulledAudioTrack = usePulledAudioTrack(
-		isScreenShare ? undefined : user.tracks.audio
+		isScreenShare ? user.tracks.screenshareAudio : user.tracks.audio
 	)
 	const shouldPullVideo = isScreenShare || (!isSelf && !audioOnlyMode)
 	let preferredRid: string | undefined = undefined
@@ -94,7 +94,11 @@ export const Participant = forwardRef<
 		shouldPullVideo ? user.tracks.video : undefined,
 		preferredRid
 	)
-	const audioTrack = isSelf ? userMedia.audioStreamTrack : pulledAudioTrack
+	const audioTrack = isSelf
+		? isScreenShare
+			? userMedia.screenShareAudioTrack
+			: userMedia.audioStreamTrack
+		: pulledAudioTrack
 	const videoTrack =
 		isSelf && !isScreenShare ? userMedia.videoStreamTrack : pulledVideoTrack
 
