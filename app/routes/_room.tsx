@@ -202,14 +202,26 @@ function Room({ room, userMedia }: RoomProps) {
 	const pushedAudioTrack = useObservableAsValue(pushedAudioTrack$)
 
 	const pushedScreenSharingTrack$ = useMemo(
-		() => partyTracks.push(userMedia.screenShareVideoTrack$),
-		[partyTracks, userMedia.screenShareVideoTrack$]
-	)
-	const pushedScreenSharingTrack = useObservableAsValue(
-		pushedScreenSharingTrack$
-	)
-	const [pinnedTileIds, setPinnedTileIds] = useState<string[]>([])
-	const [showDebugInfo, setShowDebugInfo] = useState(mode !== 'production')
+	() => partyTracks.push(userMedia.screenShareVideoTrack$),
+	[partyTracks, userMedia.screenShareVideoTrack$]
+)
+const pushedScreenSharingTrack = useObservableAsValue(
+	pushedScreenSharingTrack$
+)
+
+// ✅ ADD THIS BLOCK FOR SCREENSHARE AUDIO:
+const pushedScreenSharingAudioTrack$ = useMemo(
+	() => partyTracks.push(userMedia.screenShareAudioTrack$, {
+		sendEncodings$: of([{ networkPriority: 'high' }]),
+	}),
+	[partyTracks, userMedia.screenShareAudioTrack$]
+)
+const pushedScreenSharingAudioTrack = useObservableAsValue(
+	pushedScreenSharingAudioTrack$
+)
+
+const [pinnedTileIds, setPinnedTileIds] = useState<string[]>([])
+const [showDebugInfo, setShowDebugInfo] = useState(mode !== 'production')
 
 	const { e2eeSafetyNumber, onJoin } = useE2EE({
 		enabled: e2eeEnabled,
@@ -240,10 +252,11 @@ function Room({ room, userMedia }: RoomProps) {
 		room,
 		simulcastEnabled,
 		pushedTracks: {
-			video: trackObjectToString(pushedVideoTrack),
-			audio: trackObjectToString(pushedAudioTrack),
-			screenshare: trackObjectToString(pushedScreenSharingTrack),
-		},
+	video: trackObjectToString(pushedVideoTrack),
+	audio: trackObjectToString(pushedAudioTrack),
+	screenshare: trackObjectToString(pushedScreenSharingTrack),
+	screenshareAudio: trackObjectToString(pushedScreenSharingAudioTrack), // ✅ ADD THIS
+},
 	}
 
 	return <Outlet context={context} />
