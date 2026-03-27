@@ -31,6 +31,7 @@ export type RoomContextType = {
 		video?: string
 		audio?: string
 		screenshare?: string
+		screenshareAudio?: string  // ✅ ADD THIS
 	}
 }
 
