@@ -73,6 +73,11 @@ function useScreenshare() {
 		screenShareVideoTrack: useObservableAsValue(
 			screenshare.video.broadcastTrack$
 		),
+		// ✅ ADD THESE:
+		screenShareAudioTrack$: screenshare.audio.broadcastTrack$,
+		screenShareAudioTrack: useObservableAsValue(
+			screenshare.audio.broadcastTrack$
+		),
 	}
 }
 
@@ -91,6 +96,8 @@ export default function useUserMedia() {
 		screenShareEnabled,
 		screenShareVideoTrack,
 		screenShareVideoTrack$,
+		screenShareAudioTrack,      // ✅ ADD
+    	screenShareAudioTrack$,     // ✅ ADD
 	} = useScreenshare()
 
 	const micDevices = useObservableAsValue(mic.devices$, [])
@@ -148,10 +155,12 @@ export default function useUserMedia() {
 		videoStreamTrack: useObservableAsValue(camera.broadcastTrack$),
 
 		startScreenShare,
-		endScreenShare,
-		screenShareVideoTrack,
-		screenShareEnabled,
-		screenShareVideoTrack$,
+    	endScreenShare,
+    	screenShareVideoTrack,
+    	screenShareEnabled,
+    	screenShareVideoTrack$,
+    	screenShareAudioTrack,      // ✅ ADD
+    	screenShareAudioTrack$,     // ✅ ADD
 	}
 }
 
