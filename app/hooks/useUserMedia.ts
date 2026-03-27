@@ -24,7 +24,7 @@ export const camera = getCamera({
 	broadcasting: true,
 	constraints: { width: { ideal: 1280 }, height: { ideal: 720 } },
 })
-export const screenshare = getScreenshare({ audio: false })
+export const screenshare = getScreenshare({ audio: true })
 
 function useNoiseSuppression() {
 	const [suppressNoise, setSuppressNoise] = useLocalStorage(
