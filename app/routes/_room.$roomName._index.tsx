@@ -3,6 +3,7 @@ import type { LoaderFunctionArgs } from '@remix-run/cloudflare'
 import { json } from '@remix-run/cloudflare'
 import { useNavigate, useParams, useSearchParams } from '@remix-run/react'
 import { useObservableAsValue } from 'partytracks/react'
+import { useEffect } from 'react'
 import invariant from 'tiny-invariant'
 import { AudioIndicator } from '~/components/AudioIndicator'
 import { Button } from '~/components/Button'
@@ -18,12 +19,15 @@ import { Spinner } from '~/components/Spinner'
 import { Tooltip } from '~/components/Tooltip'
 import { useRoomContext } from '~/hooks/useRoomContext'
 import { useRoomUrl } from '~/hooks/useRoomUrl'
-import getUsername from '~/utils/getUsername.server'
+import { getOrCreateViewerUsername } from '~/utils/getUsername.server'
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-	const username = await getUsername(request)
+	const { username, setCookie } = await getOrCreateViewerUsername(request)
 	invariant(username)
-	return json({ username, callsAppId: context.env.CALLS_APP_ID })
+	return json(
+		{ username, callsAppId: context.env.CALLS_APP_ID },
+		setCookie ? { headers: { 'Set-Cookie': setCookie } } : undefined
+	)
 }
 
 let refreshCheckDone = false
@@ -61,6 +65,23 @@ export default function Lobby() {
 	const roomUrl = useRoomUrl()
 
 	const [params] = useSearchParams()
+	const viewerMode = params.get('viewer') === '1'
+
+	useEffect(() => {
+		if (!viewerMode || !session?.sessionId) return
+		userMedia.turnMicOff()
+		userMedia.turnCameraOff()
+		setJoined(true)
+		navigate('room?' + params.toString())
+	}, [navigate, params, session?.sessionId, setJoined, userMedia, viewerMode])
+
+	if (viewerMode) {
+		return (
+			<div className="grid h-full place-items-center text-zinc-500">
+				Joining viewer mode...
+			</div>
+		)
+	}
 
 	return (
 		<div className="flex flex-col items-center justify-center h-full p-4">
