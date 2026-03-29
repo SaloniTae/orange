@@ -34,3 +34,25 @@ export default async function getUsername(request: Request) {
 
 	return null
 }
+
+export async function getOrCreateViewerUsername(request: Request) {
+	const existingUsername = await getUsername(request)
+	if (existingUsername) {
+		return { username: existingUsername, setCookie: undefined as string | undefined }
+	}
+
+	const url = new URL(request.url)
+	const viewerMode = url.searchParams.get('viewer') === '1'
+	if (!viewerMode) {
+		return { username: null, setCookie: undefined as string | undefined }
+	}
+
+	const session = await getSession(request.headers.get('Cookie'))
+	const generatedUsername = `viewer-${Math.random().toString(36).slice(2, 8)}`
+	session.set('username', generatedUsername)
+
+	return {
+		username: generatedUsername,
+		setCookie: await commitSession(session),
+	}
+}

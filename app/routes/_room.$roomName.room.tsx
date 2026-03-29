@@ -6,7 +6,7 @@ import {
 	useParams,
 	useSearchParams,
 } from '@remix-run/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMount, useWindowSize } from 'react-use'
 import { AiButton } from '~/components/AiButton'
 import { ButtonLink } from '~/components/Button'
@@ -32,27 +32,31 @@ import useSounds from '~/hooks/useSounds'
 import useStageManager from '~/hooks/useStageManager'
 import { useUserJoinLeaveToasts } from '~/hooks/useUserJoinLeaveToasts'
 import { dashboardLogsLink } from '~/utils/dashboardLogsLink'
-import getUsername from '~/utils/getUsername.server'
+import { usePulledVideoTrack } from '~/hooks/usePulledVideoTrack'
+import { getOrCreateViewerUsername } from '~/utils/getUsername.server'
 import isNonNullable from '~/utils/isNonNullable'
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-	const username = await getUsername(request)
+	const { username, setCookie } = await getOrCreateViewerUsername(request)
 
-	return json({
-		username,
-		bugReportsEnabled: Boolean(
-			context.env.FEEDBACK_URL &&
-				context.env.FEEDBACK_QUEUE &&
-				context.env.FEEDBACK_STORAGE
-		),
-		disableLobbyEnforcement: context.env.DISABLE_LOBBY_ENFORCEMENT === 'true',
-		mode: context.mode,
-		hasDb: Boolean(context.env.DB),
-		hasAiCredentials: Boolean(
-			context.env.OPENAI_API_TOKEN && context.env.OPENAI_MODEL_ENDPOINT
-		),
-		dashboardDebugLogsBaseUrl: context.env.DASHBOARD_WORKER_URL,
-	})
+	return json(
+		{
+			username,
+			bugReportsEnabled: Boolean(
+				context.env.FEEDBACK_URL &&
+					context.env.FEEDBACK_QUEUE &&
+					context.env.FEEDBACK_STORAGE
+			),
+			disableLobbyEnforcement: context.env.DISABLE_LOBBY_ENFORCEMENT === 'true',
+			mode: context.mode,
+			hasDb: Boolean(context.env.DB),
+			hasAiCredentials: Boolean(
+				context.env.OPENAI_API_TOKEN && context.env.OPENAI_MODEL_ENDPOINT
+			),
+			dashboardDebugLogsBaseUrl: context.env.DASHBOARD_WORKER_URL,
+		},
+		setCookie ? { headers: { 'Set-Cookie': setCookie } } : undefined
+	)
 }
 
 export default function Room() {
@@ -62,18 +66,84 @@ export default function Room() {
 	const { mode, bugReportsEnabled, disableLobbyEnforcement } =
 		useLoaderData<typeof loader>()
 	const [search] = useSearchParams()
+	const viewerMode = search.get('viewer') === '1'
 
 	useEffect(() => {
-		if (!joined && mode !== 'development' && !disableLobbyEnforcement)
+		if (
+			!viewerMode &&
+			!joined &&
+			mode !== 'development' &&
+			!disableLobbyEnforcement
+		)
 			navigate(`/${roomName}${search.size > 0 ? '?' + search.toString() : ''}`)
-	}, [joined, mode, navigate, roomName, search, disableLobbyEnforcement])
+	}, [joined, mode, navigate, roomName, search, disableLobbyEnforcement, viewerMode])
 
-	if (!joined && mode !== 'development' && !disableLobbyEnforcement) return null
+	if (!viewerMode && !joined && mode !== 'development' && !disableLobbyEnforcement)
+		return null
 
 	return (
 		<Toast.Provider>
-			<JoinedRoom bugReportsEnabled={bugReportsEnabled} />
+			{viewerMode ? (
+				<ViewerOnlyRoom />
+			) : (
+				<JoinedRoom bugReportsEnabled={bugReportsEnabled} />
+			)}
 		</Toast.Provider>
+	)
+}
+
+function ViewerOnlyRoom() {
+	const {
+		room: { otherUsers },
+	} = useRoomContext()
+	const videoRef = useRef<HTMLVideoElement>(null)
+
+	const screenShareOwner = otherUsers.find(
+		(user) => user.tracks.screenShareEnabled && user.tracks.screenshare
+	)
+	const videoTrack = usePulledVideoTrack(screenShareOwner?.tracks.screenshare)
+
+	useEffect(() => {
+		const video = videoRef.current
+		if (!video) return
+
+		if (!videoTrack) {
+			video.srcObject = null
+			return
+		}
+
+		const stream = new MediaStream([videoTrack])
+		video.srcObject = stream
+		video.play().catch(() => undefined)
+
+		return () => {
+			video.srcObject = null
+		}
+	}, [videoTrack])
+
+	return (
+		<PullAudioTracks
+			audioTracks={
+				screenShareOwner?.tracks.screenshareAudio
+					? [screenShareOwner.tracks.screenshareAudio]
+					: []
+			}
+		>
+			<div className="grid h-full bg-black place-items-center">
+				{videoTrack ? (
+					<video
+						className="h-full w-full object-contain"
+						ref={videoRef}
+						autoPlay
+						playsInline
+					/>
+				) : (
+					<p className="text-sm text-zinc-400">
+						Waiting for host screenshare…
+					</p>
+				)}
+			</div>
+		</PullAudioTracks>
 	)
 }
 
@@ -166,7 +236,9 @@ function JoinedRoom({ bugReportsEnabled }: { bugReportsEnabled: boolean }) {
 
 	return (
 		<PullAudioTracks
-			audioTracks={otherUsers.map((u) => u.tracks.audio).filter(isNonNullable)}
+			audioTracks={otherUsers
+				.flatMap((u) => [u.tracks.audio, u.tracks.screenshareAudio])
+				.filter(isNonNullable)}
 		>
 			<div className="flex flex-col h-full bg-white dark:bg-zinc-800">
 				<div className="relative flex-grow bg-black isolate">
