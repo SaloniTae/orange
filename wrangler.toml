@@ -9,13 +9,13 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 CALLS_APP_ID = "f0469c581954dd891ce57997bde0ae85"
-MAX_WEBCAM_BITRATE = 1200000
+MAX_WEBCAM_BITRATE = 1500000
 MAX_WEBCAM_FRAMERATE = 30
 MAX_WEBCAM_QUALITY_LEVEL = 1080
 
 [env.production.vars]
 # Ensure simulcast is turned ON for production
-SIMULCAST = "true"
+# SIMULCAST = "true"
 
 # Optional vars
 # OPENAI_MODEL_ENDPOINT = ""
