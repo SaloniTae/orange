@@ -19,6 +19,15 @@ export const errorMessageMap = {
 type UserMediaError = keyof typeof errorMessageMap
 
 const broadcastByDefault = mode === 'production'
+type ScreenshareContentHint = 'motion' | 'detail'
+
+function getScreenshareContentHint(): ScreenshareContentHint {
+	if (typeof window === 'undefined') return 'motion'
+	const params = new URLSearchParams(window.location.search)
+	const value = params.get('screenshareContentHint')?.toLowerCase()
+	return value === 'detail' || value === 'details' ? 'detail' : 'motion'
+}
+
 export const mic = getMic({ broadcasting: broadcastByDefault })
 export const camera = getCamera({
 	broadcasting: true,
@@ -73,7 +82,6 @@ function useScreenshare() {
 		screenShareVideoTrack: useObservableAsValue(
 			screenshare.video.broadcastTrack$
 		),
-		// ✅ ADD THESE:
 		screenShareAudioTrack$: screenshare.audio.broadcastTrack$,
 		screenShareAudioTrack: useObservableAsValue(
 			screenshare.audio.broadcastTrack$
@@ -96,9 +104,14 @@ export default function useUserMedia() {
 		screenShareEnabled,
 		screenShareVideoTrack,
 		screenShareVideoTrack$,
-		screenShareAudioTrack,      // ✅ ADD
-    	screenShareAudioTrack$,     // ✅ ADD
+		screenShareAudioTrack,
+		screenShareAudioTrack$,
 	} = useScreenshare()
+
+	useEffect(() => {
+		if (!screenShareVideoTrack) return
+		screenShareVideoTrack.contentHint = getScreenshareContentHint()
+	}, [screenShareVideoTrack])
 
 	const micDevices = useObservableAsValue(mic.devices$, [])
 	const cameraDevices = useObservableAsValue(camera.devices$, [])
@@ -155,12 +168,12 @@ export default function useUserMedia() {
 		videoStreamTrack: useObservableAsValue(camera.broadcastTrack$),
 
 		startScreenShare,
-    	endScreenShare,
-    	screenShareVideoTrack,
-    	screenShareEnabled,
-    	screenShareVideoTrack$,
-    	screenShareAudioTrack,      // ✅ ADD
-    	screenShareAudioTrack$,     // ✅ ADD
+		endScreenShare,
+		screenShareVideoTrack,
+		screenShareEnabled,
+		screenShareVideoTrack$,
+		screenShareAudioTrack,
+		screenShareAudioTrack$,
 	}
 }
 

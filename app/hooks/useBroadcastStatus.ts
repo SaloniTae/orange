@@ -33,7 +33,7 @@ export default function useBroadcastStatus({
 		screenShareEnabled,
 		audioUnavailableReason,
 	} = userMedia
-	const { audio, video, screenshare } = pushedTracks
+	const { audio, video, screenshare, screenshareAudio } = pushedTracks
 	const { sessionId } = useObservableAsValue(partyTracks.session$) ?? {}
 	const audioUnavailable = audioUnavailableReason !== undefined
 
@@ -56,6 +56,7 @@ export default function useBroadcastStatus({
 					video,
 					audio,
 					screenshare,
+					screenshareAudio,
 				},
 			}
 
@@ -84,6 +85,7 @@ export default function useBroadcastStatus({
 		audio,
 		video,
 		screenshare,
+		screenshareAudio,
 		audioEnabled,
 		videoEnabled,
 		screenShareEnabled,
